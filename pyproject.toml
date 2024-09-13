@@ -7,6 +7,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+fastapi = "^0"
+uvicorn = "^0"
+
+[tool.poetry.group.test.dependencies]
+black = "^24"
+isort = "^5"
 
 
 [build-system]
