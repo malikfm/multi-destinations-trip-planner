@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*$py.class
+
+# poetry
+pyproject.toml
+poetry.lock
+
+# PyCharm
+.idea/
+
+# Mac
+.DS_Store
+
+# Makefile
+Makefile
