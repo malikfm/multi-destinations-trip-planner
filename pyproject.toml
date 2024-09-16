@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "multi-destinations-trip-planner"
+version = "0.1.0"
+description = ""
+authors = ["Malik Fajar Mubarok <mubarok.malikfajar@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0"
+jinja2 = "^3"
+uvicorn = "^0"
+
+[tool.poetry.group.test.dependencies]
+black = "^24"
+isort = "^5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
