@@ -22,10 +22,7 @@ def get_hotels():
     trip_repository = TripRepository()
     plan_trip_usecase = PlanTripUseCase(trip_repository)
 
-    return [
-        {"id": hotel[0], "name": hotel[1], "latitude": hotel[2], "longitude": hotel[3]}
-        for hotel in plan_trip_usecase.show_all_hotels()
-    ]
+    return plan_trip_usecase.show_all_hotels()
 
 
 @app.get("/tags")

@@ -1,26 +1,35 @@
-from typing import List, Tuple
-from math import sqrt
+import sqlite3
+from copy import deepcopy
+from typing import List, Tuple, Dict
+from math import sqrt, radians, sin, cos, atan2, asin
 
 from fastapi import HTTPException
 
 from trip_repository import TripRepository
 
 
-def euclidian_distance(x1: float, x2: float, y1: float, y2: float) -> float:
-    delta_x = x2 - x1
-    delta_y = y2 - y1
+def euclidian_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6372.8  # Earth's radius in kilometers
 
-    return sqrt((delta_x ** 2) + (delta_y ** 2))
+    delta_lat = radians(lat2 - lat1)
+    delta_lon = radians(lon2 - lon1)
+
+    a = sin(delta_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(delta_lon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+
+    return R * c
 
 
-def calculate_distances(start: Tuple[float, float], itinerary: List[Tuple[int, str, float, float]]) -> List[float]:
+def calculate_distances(start: Dict, itinerary: List[sqlite3.Row]) -> List[float]:
     distances = []
-    current = start
+    current = deepcopy(start)
 
-    for dest in itinerary:
-        dist = euclidian_distance(current[0], current[1], dest[2], dest[3])
-        distances.append(dist)
-        current = (dest[2], dest[3])
+    for destination in itinerary:
+        distance = euclidian_distance(current["latitude"], current["longitude"], destination["latitude"], destination["longitude"])
+        distances.append(distance)
+
+        current["latitude"] = destination["latitude"]
+        current["longitude"] = destination["longitude"]
 
     return distances
 
@@ -36,30 +45,34 @@ class PlanTripUseCase:
         return self.trip_repository.get_tags()
 
     def plan_trip(
-            self,
-            hotel_id: int,
-            tag: str,
-            max_destinations: int = 5
-    ) -> Tuple[List[Tuple[int, str, float, float]], List[float]]:
+        self,
+        hotel_id: int,
+        tag: str,
+        max_destinations: int = 5
+    ) -> Tuple[List[sqlite3.Row], List[float]]:
 
         hotel = self.trip_repository.get_hotel_by_id(hotel_id)
         if not hotel:
             raise HTTPException(status_code=404, detail="Hotel not found")
 
-        start = (hotel[2], hotel[3])
+        start = {"latitude": hotel["latitude"], "longitude": hotel["longitude"]}
         destinations = self.trip_repository.get_tourism_spots_by_tag(tag)
 
         if not destinations:
             return [], []
 
+        current = deepcopy(start)
         unvisited = destinations[:]
-        current = start
         itinerary = []
 
         while unvisited and len(itinerary) < max_destinations:
-            next_dest = min(unvisited, key=lambda x: euclidian_distance(current[0], current[1], x[2], x[3]))
+            next_dest = min(
+                unvisited,
+                key=lambda x: euclidian_distance(current["latitude"], current["latitude"], x["latitude"], x["longitude"])
+            )
             itinerary.append(next_dest)
-            current = (next_dest[2], next_dest[3])
+            current["latitude"] = next_dest["latitude"]
+            current["longitude"] = next_dest["longitude"]
             unvisited.remove(next_dest)
 
         distances = calculate_distances(start, itinerary)
