@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "multi-destinations-trip-planner"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Malik Fajar Mubarok <mubarok.malikfajar@gmail.com>"]
 readme = "README.md"
