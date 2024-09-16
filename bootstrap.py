@@ -7,14 +7,14 @@ import config
 
 
 def create_sqlite_tables(cursor) -> None:
-    with open("./ddl.sql") as f:
+    with open("ddl.sql") as f:
         create_stmt = f.read()
 
     cursor.executescript(create_stmt)
 
 
 def insert_hotels_to_sqlite(cursor) -> None:
-    with open("./hotels.json") as f:
+    with open("hotels.json") as f:
         hotels = json.loads(f.read())
 
     hotels = [str((hotel["name"], hotel["longitude"], hotel["latitude"])) for hotel in hotels]
@@ -46,7 +46,7 @@ def insert_tags_to_sqlite(cursor):
 
 def insert_tourism_spots_to_sqlite(conn, cursor) -> None:
     # Read tourism spots JSON file.
-    with open("./tourism_spots.json") as f:
+    with open("tourism_spots.json") as f:
         tourism_spots = json.loads(f.read())
 
     # Truncate tables.
