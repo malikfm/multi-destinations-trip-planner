@@ -1,3 +1,4 @@
+import heapq
 import sqlite3
 from copy import deepcopy
 from math import asin, atan2, cos, radians, sin, sqrt
@@ -8,7 +9,7 @@ from fastapi import HTTPException
 from trip_repository import TripRepository
 
 
-def euclidian_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+def haversine_formula(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     R = 6372.8  # Earth's radius in kilometers
 
     delta_lat = radians(lat2 - lat1)
@@ -28,7 +29,7 @@ def calculate_distances(start: Dict, itinerary: List[sqlite3.Row]) -> List[float
     current = deepcopy(start)
 
     for destination in itinerary:
-        distance = euclidian_distance(
+        distance = haversine_formula(
             current["latitude"],
             current["longitude"],
             destination["latitude"],
@@ -54,37 +55,108 @@ class PlanTripUseCase:
 
     def plan_trip(
         self, hotel_id: int, tag: str, max_destinations: int = 5
-    ) -> Tuple[List[sqlite3.Row], List[float]]:
+    ) -> Tuple[List[sqlite3.Row], List[Tuple[int, float]]]:
 
         hotel = self.trip_repository.get_hotel_by_id(hotel_id)
         if not hotel:
             raise HTTPException(status_code=404, detail="Hotel not found")
 
-        start = {"latitude": hotel["latitude"], "longitude": hotel["longitude"]}
         destinations = self.trip_repository.get_tourism_spots_by_tag(tag)
-
         if not destinations:
             return [], []
 
-        current = deepcopy(start)
-        unvisited = destinations[:]
-        itinerary = []
+        all_eligible_places = {
+            f"hotel_{hotel["id"]}": {
+                "name": hotel["name"],
+                "latitude": hotel["latitude"],
+                "longitude": hotel["longitude"],
+            }
+        }
+        for destination in destinations:
+            all_eligible_places[f"{destination["id"]}"] = {
+                "name": destination["name"],
+                "latitude": destination["latitude"],
+                "longitude": destination["longitude"],
+            }
 
-        while unvisited and len(itinerary) < max_destinations:
-            next_dest = min(
-                unvisited,
-                key=lambda x: euclidian_distance(
-                    current["latitude"],
-                    current["latitude"],
-                    x["latitude"],
-                    x["longitude"],
-                ),
-            )
-            itinerary.append(next_dest)
-            current["latitude"] = next_dest["latitude"]
-            current["longitude"] = next_dest["longitude"]
-            unvisited.remove(next_dest)
+        # Priority queue (open list)
+        open_list = []
 
-        distances = calculate_distances(start, itinerary)
+        # Start from the hotel
+        # (f_score, current_node, g_score, path, distance of each destination, stops)
+        heapq.heappush(open_list, (0, f"hotel_{hotel["id"]}", 0, [], [], 0))
 
-        return itinerary, distances
+        visited = set()  # Closed list to keep track of visited spots.
+
+        iter_num = 0
+        while open_list:
+            # Get node with lowest f_score
+            _, current_id, g_score, path, distances, stops = heapq.heappop(open_list)
+
+            # Get the current node (hotel or tourism spot)
+            if iter_num > 0:
+                current_node = all_eligible_places[current_id]
+            else:
+                current_node = all_eligible_places[f"hotel_{hotel["id"]}"]
+
+            # Add current node to the path
+            new_path = path + [(current_id, current_node["name"])]
+            new_distances = distances + [(current_id, g_score)]
+
+            # Stop if we have visited enough spots (max_destinations)
+            if stops == max_destinations:
+                # Exclude hotel. Don't show hotel in destinations list.
+                destination_path = [
+                    place[1] for place in new_path if "hotel" not in str(place[0])
+                ]
+                destination_distances = [
+                    distance[1]
+                    for distance in new_distances
+                    if "hotel" not in str(distance[0])
+                ]
+
+                return destination_path, destination_distances
+
+            visited.add(current_id)
+
+            # Explore neighbors (all other unvisited spots)
+            for neighbor_id, neighbor in all_eligible_places.items():
+                if neighbor_id in visited:
+                    continue  # Skip visited nodes
+
+                # Distance from the current node to the neighbor
+                distance = haversine_formula(
+                    current_node["latitude"],
+                    current_node["longitude"],
+                    neighbor["latitude"],
+                    neighbor["longitude"],
+                )
+
+                # Actual cost (g): The actual distance travelled so far (to the neighbor)
+                g = g_score + distance
+
+                # Heuristic (h): Distance from the neighbor to the nearest unvisited spot
+                # Here, the heuristic is simply the nearest unvisited spot or back to the start
+                h = min(
+                    haversine_formula(
+                        neighbor["latitude"],
+                        neighbor["longitude"],
+                        n["latitude"],
+                        n["longitude"],
+                    )
+                    for n_id, n in all_eligible_places.items()
+                    if n_id not in visited
+                )
+
+                # Total cost f = g + h
+                f = g + h
+
+                # Add neighbor to the open list with updated f_score, g_score, and path
+                heapq.heappush(
+                    open_list,
+                    (f, neighbor_id, distance, new_path, new_distances, stops + 1),
+                )
+
+            iter_num += 1
+
+        return [], []  # No valid path found

@@ -47,11 +47,11 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(response => response.json())
             .then(plan => {
                 let resultHTML = "<h2>Trip Plan</h2>";
-                plan.itinerary.forEach((location, index) => {
+                plan.destinations.forEach((item, index) => {
                     if (index == 0)
-                        resultHTML += `<p><b>${index + 1}. ${location.name}</b><br>Distance from hotel: ${plan.distances[index].toFixed(2)} km</p>`;
+                        resultHTML += `<p><b>${index + 1}. ${item}</b><br>Distance from hotel: ${plan.distances[index].toFixed(2)} km</p>`;
                     else
-                        resultHTML += `<p><b>${index + 1}. ${location.name}</b><br>Distance from <b>${plan.itinerary[index - 1].name}</b>: ${plan.distances[index].toFixed(2)} km</p>`;
+                        resultHTML += `<p><b>${index + 1}. ${item}</b><br>Distance from <b>${plan.destinations[index - 1]}</b>: ${plan.distances[index].toFixed(2)} km</p>`;
                 });
                 resultHTML += `<p><strong>Total distance:</strong> ${plan.total_distance.toFixed(2)} km</p>`;
                 resultDiv.innerHTML = resultHTML;
