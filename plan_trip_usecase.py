@@ -1,7 +1,7 @@
 import sqlite3
 from copy import deepcopy
-from typing import List, Tuple, Dict
-from math import sqrt, radians, sin, cos, atan2, asin
+from math import asin, atan2, cos, radians, sin, sqrt
+from typing import Dict, List, Tuple
 
 from fastapi import HTTPException
 
@@ -14,7 +14,10 @@ def euclidian_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     delta_lat = radians(lat2 - lat1)
     delta_lon = radians(lon2 - lon1)
 
-    a = sin(delta_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(delta_lon / 2) ** 2
+    a = (
+        sin(delta_lat / 2) ** 2
+        + cos(radians(lat1)) * cos(radians(lat2)) * sin(delta_lon / 2) ** 2
+    )
     c = 2 * asin(sqrt(a))
 
     return R * c
@@ -25,7 +28,12 @@ def calculate_distances(start: Dict, itinerary: List[sqlite3.Row]) -> List[float
     current = deepcopy(start)
 
     for destination in itinerary:
-        distance = euclidian_distance(current["latitude"], current["longitude"], destination["latitude"], destination["longitude"])
+        distance = euclidian_distance(
+            current["latitude"],
+            current["longitude"],
+            destination["latitude"],
+            destination["longitude"],
+        )
         distances.append(distance)
 
         current["latitude"] = destination["latitude"]
@@ -45,10 +53,7 @@ class PlanTripUseCase:
         return self.trip_repository.get_tags()
 
     def plan_trip(
-        self,
-        hotel_id: int,
-        tag: str,
-        max_destinations: int = 5
+        self, hotel_id: int, tag: str, max_destinations: int = 5
     ) -> Tuple[List[sqlite3.Row], List[float]]:
 
         hotel = self.trip_repository.get_hotel_by_id(hotel_id)
@@ -68,7 +73,12 @@ class PlanTripUseCase:
         while unvisited and len(itinerary) < max_destinations:
             next_dest = min(
                 unvisited,
-                key=lambda x: euclidian_distance(current["latitude"], current["latitude"], x["latitude"], x["longitude"])
+                key=lambda x: euclidian_distance(
+                    current["latitude"],
+                    current["latitude"],
+                    x["latitude"],
+                    x["longitude"],
+                ),
             )
             itinerary.append(next_dest)
             current["latitude"] = next_dest["latitude"]

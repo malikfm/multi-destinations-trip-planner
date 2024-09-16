@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from contextlib import closing
-from typing import Tuple, List
+from typing import List, Tuple
 
 import config
 
@@ -17,7 +17,9 @@ def insert_hotels_to_sqlite(cursor) -> None:
     with open("hotels.json") as f:
         hotels = json.loads(f.read())
 
-    hotels = [str((hotel["name"], hotel["longitude"], hotel["latitude"])) for hotel in hotels]
+    hotels = [
+        str((hotel["name"], hotel["longitude"], hotel["latitude"])) for hotel in hotels
+    ]
     values = ",".join(hotels)
 
     insert_stmt = f"""
@@ -79,21 +81,30 @@ def insert_tourism_spots_to_sqlite(conn, cursor) -> None:
     """
     for tourism_spot in tourism_spots:
         # Insert a tourism spot data and return its ID.
-        tourism_spot_value = (tourism_spot["name"], tourism_spot["longitude"], tourism_spot["latitude"])
-        inserted_tourism_spot_id = cursor.execute(tourism_spot_insert_stmt.format(value=tourism_spot_value)).fetchone()[0]
+        tourism_spot_value = (
+            tourism_spot["name"],
+            tourism_spot["longitude"],
+            tourism_spot["latitude"],
+        )
+        inserted_tourism_spot_id = cursor.execute(
+            tourism_spot_insert_stmt.format(value=tourism_spot_value)
+        ).fetchone()[0]
         conn.commit()
 
         # Insert relations between a tourism spot and its tags.
         tourism_spot_tags_values = [
             str((inserted_tourism_spot_id, inserted_tag[0]))
             for tag_name in tourism_spot["tags"]
-            for inserted_tag in inserted_tags if tag_name == inserted_tag[1]
+            for inserted_tag in inserted_tags
+            if tag_name == inserted_tag[1]
         ]
         tourism_spot_tags_values = ",".join(tourism_spot_tags_values)
-        cursor.executescript(tourism_spot_tags_insert_stmt.format(values=tourism_spot_tags_values))
+        cursor.executescript(
+            tourism_spot_tags_insert_stmt.format(values=tourism_spot_tags_values)
+        )
 
 
-if __name__ == "__main__":
+def init_db():
     with closing(sqlite3.connect(config.SQLITE_DB_PATH)) as conn:
         with closing(conn.cursor()) as cursor:
             print("Creating tables.")

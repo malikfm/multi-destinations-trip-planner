@@ -163,3 +163,7 @@ cython_debug/
 # SQLite
 *.db
 *.sqbpro
+.vercel
+
+# Generated requirements
+requirements.txt
