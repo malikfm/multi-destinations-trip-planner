@@ -4,7 +4,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from plan_trip_usecase import PlanTripUseCase
-from trip_model import TripLocation, TripPlan, TripRequest
+from trip_model import TripPlan, TripRequest
 from trip_repository import TripRepository
 
 app = FastAPI()
@@ -39,13 +39,13 @@ def plan_trip(request: TripRequest):
     plan_trip_usecase = PlanTripUseCase(trip_repository)
     itinerary = plan_trip_usecase.plan_trip(hotel_id=request.hotel_id, tag=request.tag)
 
+    destinations = itinerary[0]
+    distances = itinerary[1]
+
     return TripPlan(
-        itinerary=[
-            TripLocation(id=loc[0], name=loc[1], latitude=loc[2], longitude=loc[3])
-            for loc in itinerary[0]
-        ],
-        distances=itinerary[1],
-        total_distance=sum(itinerary[1]),
+        destinations=destinations,
+        distances=distances,
+        total_distance=sum(distances),
     )
 
 

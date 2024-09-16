@@ -147,7 +147,7 @@ The project scope includes the following constraints:
 This project is deployed as a web-based application.
 
 ### How to Use
-1. Follow this URL: https://multi-destinations-trip-planner-m4bksokoq.vercel.app.
+1. Follow this URL: https://multi-destinations-trip-planner.vercel.app
 2. Select **Hotel** and **Category**.
 3. Click **Generate Trip Plan**, then it will show up to 5 recommended destinations.
 

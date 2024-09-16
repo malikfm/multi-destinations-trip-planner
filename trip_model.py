@@ -16,6 +16,6 @@ class TripLocation(BaseModel):
 
 
 class TripPlan(BaseModel):
-    itinerary: List[TripLocation]
+    destinations: List[str]
     distances: List[float]
     total_distance: float
