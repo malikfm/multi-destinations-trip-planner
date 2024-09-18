@@ -55,7 +55,7 @@ class PlanTripUseCase:
 
     def plan_trip(
         self, hotel_id: int, tag: str, max_destinations: int = 5
-    ) -> Tuple[List[sqlite3.Row], List[Tuple[int, float]]]:
+    ) -> Tuple[List[sqlite3.Row], List[Tuple[int, float]], float]:
 
         hotel = self.trip_repository.get_hotel_by_id(hotel_id)
         if not hotel:
@@ -63,7 +63,7 @@ class PlanTripUseCase:
 
         destinations = self.trip_repository.get_tourism_spots_by_tag(tag)
         if not destinations:
-            return [], []
+            return [], [], 0
 
         all_eligible_places = {
             f"hotel_{hotel["id"]}": {
@@ -84,14 +84,17 @@ class PlanTripUseCase:
 
         # Start from the hotel
         # (f_score, current_node, g_score, path, distance of each destination, stops)
-        heapq.heappush(open_list, (0, f"hotel_{hotel["id"]}", 0, [], [], 0))
+        heapq.heappush(open_list, (0, f"hotel_{hotel["id"]}", 0, 0, 0))
+        distances = []
+        paths = []
 
         visited = set()  # Closed list to keep track of visited spots.
 
         iter_num = 0
         while open_list:
-            # Get node with lowest f_score
-            _, current_id, g_score, path, distances, stops = heapq.heappop(open_list)
+            # Get node with lowest f_score then clear the rest so no duplicate element.
+            _, current_id, g_score, distance, stops = heapq.heappop(open_list)
+            open_list.clear()
 
             # Get the current node (hotel or tourism spot)
             if iter_num > 0:
@@ -99,23 +102,14 @@ class PlanTripUseCase:
             else:
                 current_node = all_eligible_places[f"hotel_{hotel["id"]}"]
 
-            # Add current node to the path
-            new_path = path + [(current_id, current_node["name"])]
-            new_distances = distances + [(current_id, g_score)]
+            if iter_num > 0:
+                # Add current node to the path except hotel.
+                paths.append(current_node["name"])
+                distances.append(distance)
 
             # Stop if we have visited enough spots (max_destinations)
             if stops == max_destinations:
-                # Exclude hotel. Don't show hotel in destinations list.
-                destination_path = [
-                    place[1] for place in new_path if "hotel" not in str(place[0])
-                ]
-                destination_distances = [
-                    distance[1]
-                    for distance in new_distances
-                    if "hotel" not in str(distance[0])
-                ]
-
-                return destination_path, destination_distances
+                return paths, distances, g_score
 
             visited.add(current_id)
 
@@ -136,17 +130,23 @@ class PlanTripUseCase:
                 g = g_score + distance
 
                 # Heuristic (h): Distance from the neighbor to the nearest unvisited spot
-                # Here, the heuristic is simply the nearest unvisited spot or back to the start
-                h = min(
-                    haversine_formula(
-                        neighbor["latitude"],
-                        neighbor["longitude"],
-                        n["latitude"],
-                        n["longitude"],
+                # Here, the heuristic is simply the nearest unvisited spot
+                nearest_unvisited_spots = [
+                    n for n_id, n in all_eligible_places.items() if n_id not in visited and n_id != neighbor_id
+                ]
+
+                if nearest_unvisited_spots:
+                    h = min(
+                        haversine_formula(
+                            neighbor["latitude"],
+                            neighbor["longitude"],
+                            n["latitude"],
+                            n["longitude"],
+                        )
+                        for n in nearest_unvisited_spots
                     )
-                    for n_id, n in all_eligible_places.items()
-                    if n_id not in visited
-                )
+                else:
+                    h = 0  # All spots have been visited
 
                 # Total cost f = g + h
                 f = g + h
@@ -154,9 +154,9 @@ class PlanTripUseCase:
                 # Add neighbor to the open list with updated f_score, g_score, and path
                 heapq.heappush(
                     open_list,
-                    (f, neighbor_id, distance, new_path, new_distances, stops + 1),
+                    (f, neighbor_id, g, distance, stops + 1),
                 )
 
             iter_num += 1
 
-        return [], []  # No valid path found
+        return [], [], 0  # No valid path found

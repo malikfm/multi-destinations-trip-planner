@@ -41,11 +41,12 @@ def plan_trip(request: TripRequest):
 
     destinations = itinerary[0]
     distances = itinerary[1]
+    total_distance = itinerary[2]
 
     return TripPlan(
         destinations=destinations,
         distances=distances,
-        total_distance=sum(distances),
+        total_distance=total_distance
     )
 
 
