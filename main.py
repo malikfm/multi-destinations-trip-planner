@@ -44,9 +44,7 @@ def plan_trip(request: TripRequest):
     total_distance = itinerary[2]
 
     return TripPlan(
-        destinations=destinations,
-        distances=distances,
-        total_distance=total_distance
+        destinations=destinations, distances=distances, total_distance=total_distance
     )
 
 

@@ -1,7 +1,7 @@
 import heapq
 import sqlite3
 from copy import deepcopy
-from math import asin, atan2, cos, radians, sin, sqrt
+from math import asin, cos, radians, sin, sqrt
 from typing import Dict, List, Tuple
 
 from fastapi import HTTPException
@@ -132,10 +132,14 @@ class PlanTripUseCase:
                 # Heuristic (h): Distance from the neighbor to the nearest unvisited spot
                 # Here, the heuristic is simply the nearest unvisited spot
                 nearest_unvisited_spots = [
-                    n for n_id, n in all_eligible_places.items() if n_id not in visited and n_id != neighbor_id
+                    n
+                    for n_id, n in all_eligible_places.items()
+                    if n_id not in visited and n_id != neighbor_id
                 ]
 
-                if nearest_unvisited_spots:
+                # Because max destinations = 5, no need to look up nearest unvisited spots from neighbor if current node
+                #  is the 4th node.
+                if nearest_unvisited_spots and stops < (max_destinations - 2):
                     h = min(
                         haversine_formula(
                             neighbor["latitude"],
@@ -146,7 +150,7 @@ class PlanTripUseCase:
                         for n in nearest_unvisited_spots
                     )
                 else:
-                    h = 0  # All spots have been visited
+                    h = 0  # All spots have been visited or current node = node before last node.
 
                 # Total cost f = g + h
                 f = g + h
