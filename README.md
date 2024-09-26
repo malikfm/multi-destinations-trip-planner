@@ -1,7 +1,7 @@
 # Multi Destinations Trip Planner
 This project is part of my master's study assessment for the course "Introduction to Artificial Intelligence," specifically focused on Chapter 4: Search Algorithms. The project, titled "Multi-Destination (Itinerary) Trip Planner," draws inspiration from travel apps like TripAdvisor. The system allows users to select a hotel and choose one of categories of interests. Based on these inputs, it generates a travel itinerary.
 
-The hotel serves as the starting point, while the selected category filters relevant tourist attractions that align with the selected category. The itinerary will include up to five destinations, starting from the hotel to the first attraction, followed by routes between the subsequent attractions until the final stop. The trip plan is generated using the A* algorithm, with the Haversine formula employed as the heuristic function to calculate distances between destinations.
+The hotel serves as the starting point, while the selected category filters relevant tourist attractions that align with the selected category. The itinerary will include up to five destinations, starting from the hotel to the first attraction, followed by routes between the subsequent attractions until the final stop (back to the hotel again). The trip plan is generated using the A* algorithm, with the Haversine formula employed as the heuristic function to calculate distances between destinations.
 
 ## Map
 The data was manually collected from Google Maps and is limited to a selection of places in Singapore.
@@ -80,8 +80,8 @@ The map network can be represented as a fully connected graph, where each point 
 ![paths_viz_fully_connected_graph.png](docs/images/paths_viz_fully_connected_graph.png)
 
 In a fully connected graph, the total distance between the paths:
-1. Hotel → A → B → C
-2. Hotel → A → C → B
+1. Hotel → A → B → C → Hotel
+2. Hotel → A → C → B → Hotel
 
 can be different, even though all nodes are directly connected. The difference arises due to the order in which the destinations are visited, which affects the total travel distance.
 
@@ -99,12 +99,19 @@ Let’s say the hotel is the starting point, and the spots are A, B, and C, all 
      - Hotel → A = 5 km
      - Hotel → B = 7 km
      - Hotel → C = 8 km
-   - Now, the heuristic (`h(n)`) for each of these is the straight-line distance from A, B, and C to the nearest other spot.
-     - `h(A)` = distance from A to nearest unvisited spot, say B.
-     - `h(B)` = distance from B to nearest unvisited spot, say A or C.
-     - `h(C)` = distance from C to nearest unvisited spot, say B or A.
-   - Let’s say A is closest to the next unvisited spot B, so you might prefer A first because it will minimize the future cost (`f(A) = g(A) + h(A)`).
-
+   - Now, the heuristic (`h1(n)`) for each of these is the straight-line distance from A, B, and C to the nearest other spot.
+     - `h1(A)` = distance from A to nearest unvisited spot, say B.
+     - `h1(B)` = distance from B to nearest unvisited spot, say A or C.
+     - `h1(C)` = distance from C to nearest unvisited spot, say B or A.
+   - Distance from the farthest unvisited spot back to the hotel would be `h2`.
+   - The heuristic is `min(h1 + h2)`.
+    
+    Since `h2` is a constant (the distance from the farthest unvisited tourist spot to the hotel), it doesn't vary depending on which spot you choose next. Therefore:
+    ```
+    min(h1 + h2) = min(h1) + h2
+    ```
+    When you minimize `h1 + h2`, you are minimizing `h1` because `h2` is a fixed value for all paths. Since `h2` is added equally to all possible options, it doesn't affect which `h1` is chosen as the minimum. Thus, the heuristic function will be `min(h1)`.
+    
 2. Subsequent Steps:
 
    - Once you visit A, A* recalculates the costs for the next move based on the remaining unvisited spots (B and C).
@@ -112,8 +119,8 @@ Let’s say the hotel is the starting point, and the spots are A, B, and C, all 
 
 ## Solution State Space Representation
 1. **States:** Represent the current location and visited locations. Example: currently at A and have visited the Hotel and A &#8594; `{"current": "A", "visited": ["Hotel", "A"]}`. 
-2. **Initial State:** Starting at the hotel with no tourist spots visited. Example: `{"current": "Hotel", "visited": ["Hotel"]}`
-3. **Goal State:** Reaching up to 5 destinations. Example for 5 destinations trip: `{"current": "E", "visited": ["Hotel", "A", "B", "C", "D", "E"]}` 
+2. **Initial State:** Starting at the hotel with no tourism spots visited. Example: `{"current": "Hotel", "visited": ["Hotel"]}`
+3. **Goal State:** Back to the hotel after reaching up to 5 destinations. Example: `{"current": "Hotel", "visited": ["Hotel", "A", "B", "C", "D", "E", "Hotel"]}` 
 4. **Actions:** Moving between locations with a cost (distance), **current location** &#8594; **next location**.
 5. **Transitions:** A state transition happens when you move from one location to another. Each transition has a cost, typically the distance between two locations. Example:
 
@@ -133,7 +140,8 @@ Cost: Distance A → B
 3. {"current": "B", "visited": ["Hotel", "A", "B"]}
 4. {"current": "C", "visited": ["Hotel", "A", "B", "C"]}
 5. {"current": "D", "visited": ["Hotel", "A", "B", "C", "D"]}
-6. {"current": "E", "visited": ["Hotel", "A", "B", "C", "D", "E"]} → Goal
+6. {"current": "E", "visited": ["Hotel", "A", "B", "C", "D", "E"]}
+7. {"current": "Hotel", "visited": ["Hotel", "A", "B", "C", "D", "E", "Hotel"]} → Goal
 ```
 
 ## Scopes
