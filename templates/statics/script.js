@@ -47,13 +47,17 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(response => response.json())
             .then(plan => {
                 let resultHTML = "<h2>Trip Plan</h2>";
+                let total_places = plan.destinations.length;
+
                 plan.destinations.forEach((item, index) => {
                     if (index == 0)
-                        resultHTML += `<p><b>${index + 1}. ${item}</b><br>Distance from hotel: ${plan.distances[index].toFixed(2)} km</p>`;
+                        resultHTML += `<p style="color: #000000;"><b>${index + 1}. ${item}</b></p><blockquote>Next destination ${plan.distances[index + 1].toFixed(2)} km</blockquote>`;
+                    else if (index == total_places - 1)
+                        resultHTML += `<p style="color: #000000;"><b>${index + 1}. ${item}</b></p>`;
                     else
-                        resultHTML += `<p><b>${index + 1}. ${item}</b><br>Distance from <b>${plan.destinations[index - 1]}</b>: ${plan.distances[index].toFixed(2)} km</p>`;
+                        resultHTML += `<p style="color: #000000;">${index + 1}. ${item}</p><blockquote>Next destination ${plan.distances[index + 1].toFixed(2)} km</blockquote>`;
                 });
-                resultHTML += `<p><strong>Total distance:</strong> ${plan.total_distance.toFixed(2)} km</p>`;
+                resultHTML += `<hr><p><strong>Total distance:</strong> ${plan.total_distance.toFixed(2)} km</p>`;
                 resultDiv.innerHTML = resultHTML;
             })
             .catch(error => {

@@ -102,14 +102,28 @@ class PlanTripUseCase:
             else:
                 current_node = all_eligible_places[f"hotel_{hotel["id"]}"]
 
-            if iter_num > 0:
-                # Add current node to the path except hotel.
-                paths.append(current_node["name"])
-                distances.append(distance)
+            # if iter_num > 0:
+            #     # Add current node to the path except hotel.
+            paths.append(current_node["name"])
+            distances.append(distance)
 
             # Stop if we have visited enough spots (max_destinations)
             if stops == max_destinations:
-                return paths, distances, g_score
+                # Distance from last destination to hotel.
+                last_distance = haversine_formula(
+                    current_node["latitude"],
+                    current_node["longitude"],
+                    hotel["latitude"],
+                    hotel["longitude"]
+                )
+
+                # Add hotel again to the last.
+                paths.append(paths[0])
+                distances.append(last_distance)
+
+                total_distance = g_score + last_distance
+
+                return paths, distances, total_distance
 
             visited.add(current_id)
 

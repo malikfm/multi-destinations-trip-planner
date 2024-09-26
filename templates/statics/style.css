@@ -22,6 +22,17 @@ h1 {
     text-align: center;
 }
 
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #ccc;
+    color: #717171;
+}
+
+hr {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
 .form-group {
     margin-bottom: 15px;
 }
